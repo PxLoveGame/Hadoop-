@@ -30,11 +30,11 @@ import GroupBy.GroupByOrder.Map;
 import GroupBy.GroupByOrder.Reduce;
 
 
-public class JoinOrdersAndCustomers {
+public class JoinOrdersAndCustomersSumPrice {
 
-	private static final String INPUT_PATH = "input-join/";
+	private static final String INPUT_PATH = "input-join-test/";
 	private static final String OUTPUT_PATH = "output/join-";
-	private static final Logger LOG = Logger.getLogger(JoinOrdersAndCustomers.class.getName());
+	private static final Logger LOG = Logger.getLogger(JoinOrdersAndCustomersSumPrice.class.getName());
 
 	static {
 		System.setProperty("java.util.logging.SimpleFormatter.format", "%5$s%n%6$s");
@@ -70,7 +70,7 @@ public class JoinOrdersAndCustomers {
 			else if(tuples.length == ORDER_LENGTH){
 				customerId = tuples[1];
 				type = "ORDER";
-				content = tuples[8];
+				content = tuples[3];
 			}
 			
 			if(!customerId.equals("")){
@@ -82,13 +82,13 @@ public class JoinOrdersAndCustomers {
 		}
 	}
 
-	public static class Reduce extends Reducer<Text, Text, Text, Text> {
+	public static class Reduce extends Reducer<Text, Text, Text, LongWritable> {
 
 		@Override
 		public void reduce(Text key, Iterable<Text> values, Context context)
 				throws IOException, InterruptedException {
 					
-			ArrayList<Text> orders = new ArrayList<>();
+			long sum = 0;
 			Text customer = new Text();
 			
 			for(Text t : values){
@@ -100,18 +100,16 @@ public class JoinOrdersAndCustomers {
 					String[] t_tabs = t.toString().split("\\|");
 					type = t_tabs[0];
 					
-					if(type.equals("CUSTOMER")){orders.add(new Text(t_tabs[1]));
+					if(type.equals("CUSTOMER")){
 						customer = new Text(t_tabs[1]);
 					}
 					else if(type.equals("ORDER")){
-						orders.add(new Text(t_tabs[1]));
+						sum += Float.parseFloat(t_tabs[1]);
 					}				
 				}
 			}
-			if(!customer.equals("")){
-				for(Text order: orders){
-					context.write(customer, order);
-				}
+			if(!customer.equals("") && sum != 0){
+				context.write(customer, new LongWritable(sum));
 			}
 		}
 	}

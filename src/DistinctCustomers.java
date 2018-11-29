@@ -1,13 +1,7 @@
-package Join;
-
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
 import java.util.logging.FileHandler;
 import java.util.logging.Logger;
 import java.util.logging.SimpleFormatter;
@@ -20,21 +14,15 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
-import org.apache.hadoop.mapreduce.Reducer.Context;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 
-import GroupBy.GroupByOrder.Map;
-import GroupBy.GroupByOrder.Reduce;
-
-
-public class JoinOrdersAndCustomers {
-
-	private static final String INPUT_PATH = "input-join/";
-	private static final String OUTPUT_PATH = "output/join-";
-	private static final Logger LOG = Logger.getLogger(JoinOrdersAndCustomers.class.getName());
+public class DistinctCustomers {
+	private static final String INPUT_PATH = "input-groupBy/";
+	private static final String OUTPUT_PATH = "output/groupBy-";
+	private static final Logger LOG = Logger.getLogger(DistinctCustomers.class.getName());
 
 	static {
 		System.setProperty("java.util.logging.SimpleFormatter.format", "%5$s%n%6$s");
@@ -47,38 +35,18 @@ public class JoinOrdersAndCustomers {
 			System.exit(1);
 		}
 	}
-	
+
 	public static class Map extends Mapper<LongWritable, Text, Text, Text> {
 
 		@Override
-		public void map(LongWritable key, Text values, Context context) throws IOException, InterruptedException {
-	
-			final int CUSTOMER_LENGTH = 8;
-			final int ORDER_LENGTH = 9;
+		public void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
 			
-			String customerId = "";
-			String type = "";
-			String content = "";
-			
-			String[] tuples = values.toString().split("\\|");
-			
-			if(tuples.length == CUSTOMER_LENGTH){
-				customerId = tuples[0];
-				type = "CUSTOMER";
-				content = tuples[1];
-			}
-			else if(tuples.length == ORDER_LENGTH){
-				customerId = tuples[1];
-				type = "ORDER";
-				content = tuples[8];
-			}
-			
-			if(!customerId.equals("")){
-				//System.out.println("Mapping :" + customerId + " ==> " + type + " ~ " + content);
-				context.write(new Text(customerId), new Text( type + "|" + content ));
-			}
+			String[] colonnes = value.toString().split(",");
+			String customerID = colonnes[5];
+			String customerName = colonnes[6];
 			
 			
+			context.write(new Text(customerID), new Text(customerName));
 		}
 	}
 
@@ -87,39 +55,18 @@ public class JoinOrdersAndCustomers {
 		@Override
 		public void reduce(Text key, Iterable<Text> values, Context context)
 				throws IOException, InterruptedException {
-					
-			ArrayList<Text> orders = new ArrayList<>();
-			Text customer = new Text();
 			
-			for(Text t : values){
-				
-				String type = "";
-				
-				if(t.getLength() != 0){
-				
-					String[] t_tabs = t.toString().split("\\|");
-					type = t_tabs[0];
-					
-					if(type.equals("CUSTOMER")){orders.add(new Text(t_tabs[1]));
-						customer = new Text(t_tabs[1]);
-					}
-					else if(type.equals("ORDER")){
-						orders.add(new Text(t_tabs[1]));
-					}				
-				}
-			}
-			if(!customer.equals("")){
-				for(Text order: orders){
-					context.write(customer, order);
-				}
-			}
+			for(Text t: values){
+				context.write(key, t);
+				return;
+			}	
 		}
 	}
-	
+
 	public static void main(String[] args) throws Exception {
 		Configuration conf = new Configuration();
 
-		Job job = new Job(conf, "Join");
+		Job job = new Job(conf, "GroupBy");
 
 		job.setOutputKeyClass(Text.class);
 		job.setOutputValueClass(Text.class);
