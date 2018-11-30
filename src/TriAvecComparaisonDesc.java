@@ -1,13 +1,5 @@
-
-import java.io.IOException;
-import java.time.Instant;
-import java.util.logging.FileHandler;
-import java.util.logging.Logger;
-import java.util.logging.SimpleFormatter;
-
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.WritableComparable;
@@ -20,6 +12,16 @@ import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 
+import java.io.IOException;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.time.Instant;
+import java.util.Date;
+import java.util.logging.FileHandler;
+import java.util.logging.Logger;
+import java.util.logging.SimpleFormatter;
+
 
 // =========================================================================
 // COMPARATEURS
@@ -29,48 +31,48 @@ import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
  * Comparateur qui inverse la méthode de comparaison d'un sous-type T de WritableComparable (ie. une clé).
  */
 @SuppressWarnings("rawtypes")
-class InverseComparator<T extends WritableComparable> extends WritableComparator {
-
-	public InverseComparator(Class<T> parameterClass) {
-		super(parameterClass, true);
-	}
-
-	/**
-	 * Cette fonction définit l'ordre de comparaison entre 2 objets de type T.
-	 * Dans notre cas nous voulons simplement inverser la valeur de retour de la méthode T.compareTo.
-	 * 
-	 * @return 0 si a = b <br>
-	 *         x > 0 si a > b <br>
-	 *         x < 0 sinon
-	 */
-	@SuppressWarnings("unchecked")
-	@Override
-	public int compare(WritableComparable a, WritableComparable b) {
-
-		// On inverse le retour de la méthode de comparaison du type
-		return -a.compareTo(b);
-	}
-}
-
-/**
- * Inverseur de la comparaison du type Text.
- */
-class TextInverseComparator extends InverseComparator<Text> {
-
-	public TextInverseComparator() {
-		super(Text.class);
-	}
-}
+//class InverseComparator<T extends WritableComparable> extends WritableComparator {
+//
+//	public InverseComparator(Class<T> parameterClass) {
+//		super(parameterClass, true);
+//	}
+//
+//	/**
+//	 * Cette fonction définit l'ordre de comparaison entre 2 objets de type T.
+//	 * Dans notre cas nous voulons simplement inverser la valeur de retour de la méthode T.compareTo.
+//	 *
+//	 * @return 0 si a = b <br>
+//	 *         x > 0 si a > b <br>
+//	 *         x < 0 sinon
+//	 */
+//	@SuppressWarnings("unchecked")
+//	@Override
+//	public int compare(WritableComparable a, WritableComparable b) {
+//
+//		// On inverse le retour de la méthode de comparaison du type
+//		return -a.compareTo(b);
+//	}
+//}
+//
+///**
+// * Inverseur de la comparaison du type Text.
+// */
+//class TextInverseComparator extends InverseComparator<Text> {
+//
+//	public TextInverseComparator() {
+//		super(Text.class);
+//	}
+//}
 
 
 // =========================================================================
 // CLASSE MAIN
 // =========================================================================
 
-public class TriAvecComparaison {
+public class TriAvecComparaisonDesc {
 	private static final String INPUT_PATH = "input-groupBy/";
 	private static final String OUTPUT_PATH = "output/9-TriAvecComparaison-";
-	private static final Logger LOG = Logger.getLogger(TriAvecComparaison.class.getName());
+	private static final Logger LOG = Logger.getLogger(TriAvecComparaisonDesc.class.getName());
 
 	static {
 		System.setProperty("java.util.logging.SimpleFormatter.format", "%5$s%n%6$s");
@@ -93,6 +95,29 @@ public class TriAvecComparaison {
 
 		@Override
 		public void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
+			if(key.get() == 0) return;
+
+			final int ORDER_DATE_POSITION = 2;
+
+			String dateStr = value.toString().split(",")[ORDER_DATE_POSITION];
+			String formatedDate = dateStr;
+
+			DateFormat inDateFormat = new SimpleDateFormat("m/dd/yy"); // 1/30/16
+			DateFormat outDateFormat = new SimpleDateFormat("yyyy/mm/dd");
+			Date date = null;
+			try {
+				date = inDateFormat.parse(dateStr);
+				formatedDate = outDateFormat.format(date);
+
+			} catch (ParseException e) {
+				e.printStackTrace();
+				return;
+			}
+
+//			System.out.println("Date parsed as " + date.getTime());
+
+//			System.out.println("Mapping " + key + " ==> " + date.getTime() + " : " + dateStr);
+			context.write( new Text(formatedDate), new Text(value) );
 		}
 	}
 
@@ -100,9 +125,14 @@ public class TriAvecComparaison {
 	// REDUCER
 	// =========================================================================
 
-	public static class Reduce extends Reducer<Text, IntWritable, Text, IntWritable> {
+	public static class Reduce extends Reducer<Text, Text, Text, Text> {
 
-		public void reduce(Text key, Iterable<IntWritable> values, Context context) {
+		public void reduce(Text key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
+			for (Text value : values){
+
+
+				context.write(key, value);
+			}
 		}
 	}
 
@@ -125,6 +155,7 @@ public class TriAvecComparaison {
 		job.setOutputValueClass(Text.class);
 
 		job.setMapperClass(Map.class);
+		job.setReducerClass(Reduce.class);
 
 		job.setInputFormatClass(TextInputFormat.class);
 		job.setOutputFormatClass(TextOutputFormat.class);
