@@ -40,6 +40,8 @@ public class DistinctCustomers {
 
 		@Override
 		public void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
+
+			if (key.get() == 0) return;
 			
 			String[] colonnes = value.toString().split(",");
 			String customerID = colonnes[5];
@@ -66,7 +68,7 @@ public class DistinctCustomers {
 	public static void main(String[] args) throws Exception {
 		Configuration conf = new Configuration();
 
-		Job job = new Job(conf, "GroupBy");
+		Job job = new Job(conf, "DistinctCustomers");
 
 		job.setOutputKeyClass(Text.class);
 		job.setOutputValueClass(Text.class);
