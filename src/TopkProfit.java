@@ -62,7 +62,6 @@ class ProfitMap extends Mapper<LongWritable, Text, LongWritable, Text> {
 
 class ProfitReduce extends Reducer<LongWritable, Text, LongWritable, Text> {
 	private int k;
-
 	private TreeMap<Long, ArrayList<Text>> profits = new TreeMap<>();
 
 	/**
@@ -96,7 +95,7 @@ class ProfitReduce extends Reducer<LongWritable, Text, LongWritable, Text> {
 		for (Long currentKey : firstKeys){
 			Iterable<Text> texts = profits.get(currentKey);
 			for (Text currentText : texts){
-				if (count++ < k){
+				if (count++ < k){ // write at most k entries
 					context.write(new LongWritable(currentKey), currentText);
 				}
 			}
@@ -108,7 +107,7 @@ class ProfitReduce extends Reducer<LongWritable, Text, LongWritable, Text> {
 public class TopkProfit {
 	private static final String INPUT_PATH = "input-groupBy/";
 	private static final String OUTPUT_PATH = "output/Topk-";
-	private static final Logger LOG = Logger.getLogger(TopkWordCount.class.getName());
+	private static final Logger LOG = Logger.getLogger(TopkProfit.class.getName());
 
 	static {
 		System.setProperty("java.util.logging.SimpleFormatter.format", "%5$s%n%6$s");
