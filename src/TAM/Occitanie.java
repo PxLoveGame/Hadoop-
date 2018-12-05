@@ -20,19 +20,18 @@ import java.util.logging.FileHandler;
 import java.util.logging.Logger;
 import java.util.logging.SimpleFormatter;
 
-public class ServiceHoraire {
+public class Occitanie {
 	private static final String INPUT_PATH = "input-TAM/";
 	private static final String OUTPUT_PATH = "output/TAM_horairesService-";
-	private static final Logger LOG = Logger.getLogger(ServiceHoraire.class.getName());
+	private static final Logger LOG = Logger.getLogger(Occitanie.class.getName());
 	private static final IntWritable one = new IntWritable(1);
 
 
 
-//	public static final int COURSE_INDEX = 0;
-	public static final int STOP_ID_INDEX = 2;
-	public static final int STOP_NAME_INDEX = 3; // ex. 'OCCITANIE'
-	public static final int ROUTE_NAME_INDEX = 4; // ex. '1' pour Ligne 1
-	public static final int DEPARTURE_TIME_INDEX = 7; // format hh:ii:ss
+//	public static final int STOP_ID_INDEX = 2;
+	private static final int STOP_NAME_INDEX = 3; // ex. 'OCCITANIE'
+	private static final int ROUTE_NAME_INDEX = 4; // ex. '1' pour Ligne 1
+	private static final int DEPARTURE_TIME_INDEX = 7; // format hh:ii:ss
 
 
 	static {
@@ -51,20 +50,17 @@ public class ServiceHoraire {
 
 		@Override
 		public void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
+			if (key.get() == 0) return; // passer le header CSV
 
-			if (key.get() == 0) return;
-//			System.out.println("Reading " + value);
-			
 			String[] tokens = value.toString().split(";");
 			String stop_name  = tokens[STOP_NAME_INDEX];
 			String route_name  = tokens[ROUTE_NAME_INDEX];
 			String hour = tokens[DEPARTURE_TIME_INDEX].split(":")[0]; // sur 'hh:ii:ss' ne garder que 'hh'
 
-			Text k = new Text( hour + "h\tLigne " + route_name);
-
-			if (stop_name.equals("OCCITANIE"))
-			context.write(k, one);
-//			System.out.println("Map " + k );
+			if (stop_name.equals("OCCITANIE")) {
+				Text k = new Text( hour + "h\tLigne " + route_name);
+				context.write(k, one);
+			}
 		}
 	}
 
