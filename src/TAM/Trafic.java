@@ -75,7 +75,7 @@ public class Trafic {
 		public void reduce(Text key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
 
 			int tramsAller = 0, tramsRetour = 0, busAller = 0, busRetour = 0;
-			int trams = 0, buses = 0;
+			int maxTrams = 0, maxBuses = 0;
 
 			// key : nom de la station + ; + heure
 			String[] tokens = key.toString().split(";");
@@ -105,27 +105,27 @@ public class Trafic {
 			String k = stop_name + "("+hour+"h)";
 			String v = "";
 
-			trams = Math.max(tramsAller, tramsRetour);
-			buses = Math.max(busAller, busRetour);
+			maxTrams = Math.max(tramsAller, tramsRetour);
+			maxBuses = Math.max(busAller, busRetour);
 
-			if (trams > 0) {
+			if (maxTrams > 0) {
 				v += "trams=";
-				if (trams <= 4 ){
+				if (maxTrams <= 4 ){
 					v += "faible";
-				}else if (trams <= 9){
+				}else if (maxTrams <= 9){
 					v += "moyen";
 				}else v += "fort";
 			}
 
-			if (trams > 0 && buses > 0){
+			if (maxTrams > 0 && maxBuses > 0){
 				v += "\t";
 			}
 
-			if (buses > 0) {
+			if (maxBuses > 0) {
 				v += "bus=";
-				if (buses <= 4 ){
+				if (maxBuses <= 4 ){
 					v += "faible";
-				}else if (buses <= 9){
+				}else if (maxBuses <= 9){
 					v += "moyen";
 				}else v += "fort";
 			}
