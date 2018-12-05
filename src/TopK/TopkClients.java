@@ -1,5 +1,6 @@
 package TopK;
 
+import Tri.LongWritableInverseComparator;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.LongWritable;
@@ -19,12 +20,6 @@ import java.util.logging.FileHandler;
 import java.util.logging.Logger;
 import java.util.logging.SimpleFormatter;
 
-//class LongWritableInverseComparator extends InverseComparator<LongWritable> {
-//
-//	public LongWritableInverseComparator() {
-//		super(LongWritable.class);
-//	}
-//}
 
 // =========================================================================
 // MAPPERS
@@ -32,44 +27,42 @@ import java.util.logging.SimpleFormatter;
 
 class TopMap extends Mapper<LongWritable, Text, Text, LongWritable> {
 
-//	private int k;
+	private int k;
 
 
-	@Override
+    public void setup(Context context) {
+        // On charge k
+        k = context.getConfiguration().getInt("k", 1);
+    }
+
+    @Override
 	public void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
 
 
-		String[] tokens = value.toString().split("\\s+");
+		String[] tokens = value.toString().split("\t");
+
+		String customerId = tokens[0];
+		Long profit = (long) Float.parseFloat(tokens[1]);
 
 
-		String customerId;
-		Long profit;
-		try {
-			customerId = tokens[0];
-			profit = (long) Float.parseFloat(tokens[1]);
-		}catch (NumberFormatException e){
-			e.printStackTrace();
-			return;
-		}
-
-//		System.out.println("Mapping " + customerId+ " ==> " + profit);
-		context.write(new Text(customerId), new LongWritable(profit));
+        if (key.get() < k) {
+            System.out.println("k : " + k);
+            System.out.println("MMMMap : "+ key.get() + "->" + value);
+            System.out.println("Mapmap : " + customerId + " ==>" + profit);
+            context.write(new Text(customerId), new LongWritable(profit));
+        }else System.out.println("key= " + key);
 
 
 	}
 }
 
-class ClientProfitMap extends Mapper<LongWritable, Text, Text, LongWritable> {
+class ClientProfitMap extends Mapper<LongWritable, Text, LongWritable, Text> {
 
-//	private int k;
 
 	@Override
 	public void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
 
 		if (key.get() == 0) return; // avoid CSV header
-
-
-//		System.out.println("TopK.ClientProfitMap : " + key + " ==> " + value);
 
 		String[] tokens = value.toString().split(",");
 
@@ -85,7 +78,7 @@ class ClientProfitMap extends Mapper<LongWritable, Text, Text, LongWritable> {
 		}
 
 
-		context.write( new Text(customerId), new LongWritable(profit) );
+		context.write(new LongWritable(profit), new Text(customerId));
 
 	}
 }
@@ -151,22 +144,17 @@ class TopReduce extends Reducer<Text, LongWritable, Text, LongWritable> {
 	}
 }
 
-class ClientProfitReduce extends Reducer<Text, LongWritable, Text, LongWritable> {
+class ClientProfitReduce extends Reducer<LongWritable, Text, Text, LongWritable> {
 
 	@Override
-	public void reduce(Text key, Iterable<LongWritable> values, Context context)
+	public void reduce(LongWritable key, Iterable<Text> values, Context context)
 			throws IOException, InterruptedException {
 
-		// Le reducer recoit dans l'ordre (via le shuffle) les commandes par profit décroissant
 
-		long sum = 0;
+        for (Text value : values){
+            context.write(value, key);
+        }
 
-		for (LongWritable value : values){
-
-			sum += value.get();
-		}
-
-		context.write(key, new LongWritable(sum));
 	}
 
 }
@@ -217,9 +205,10 @@ public class TopkClients{
 		conf.setInt("k", k);
 
 		Job profitSortJob = new Job(conf, "clients_sort");
-//		profitSortJob.setSortComparatorClass(LongWritableInverseComparator.class);
-		profitSortJob.setOutputKeyClass(Text.class);
-		profitSortJob.setOutputValueClass(LongWritable.class);
+		profitSortJob.setOutputKeyClass(LongWritable.class);
+		profitSortJob.setOutputValueClass(Text.class);
+
+		profitSortJob.setSortComparatorClass(LongWritableInverseComparator.class);
 
 		profitSortJob.setMapperClass(ClientProfitMap.class);
 		profitSortJob.setReducerClass(ClientProfitReduce.class);
@@ -231,11 +220,11 @@ public class TopkClients{
 		String tempOutputPath = OUTPUT_PATH + "sort-" + Instant.now().getEpochSecond();
 		FileOutputFormat.setOutputPath(profitSortJob, new Path(tempOutputPath));
 		profitSortJob.waitForCompletion(true);
-		System.out.println("Fin de process clients_sort vers " + tempOutputPath);
 
 //		// --------------------------------------------------
 //
 		Job topFilter = new Job(conf, "only_top");
+        topFilter.setSortComparatorClass(LongWritableInverseComparator.class);
 		topFilter.setOutputKeyClass(Text.class);
 		topFilter.setOutputValueClass(LongWritable.class);
 

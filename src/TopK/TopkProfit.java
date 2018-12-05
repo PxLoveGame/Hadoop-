@@ -1,5 +1,6 @@
 package TopK;
 
+import Tri.LongWritableInverseComparator;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.LongWritable;
@@ -28,82 +29,67 @@ import java.util.logging.SimpleFormatter;
  */
 
 
-//class LongWritableInverseComparator extends InverseComparator<LongWritable> {
-//
-//	public LongWritableInverseComparator() {
-//		super(LongWritable.class);
-//	}
-//}
-
-// =========================================================================
-// MAPPERS
-// =========================================================================
 
 class ProfitMap extends Mapper<LongWritable, Text, LongWritable, Text> {
 
 //	private int k;
 
-	@Override
-	public void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
-		if (key.get() == 0) return; // retirer le header CSV
+    @Override
+    public void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
+        if (key.get() == 0) return; // retirer le header CSV
 
-		String[] values = value.toString().split(",");
+        String[] values = value.toString().split(",");
 
-		long profit = (long) Float.parseFloat(values[20]);
+        long profit = (long) Float.parseFloat(values[20]);
 //		String customerId = values[5];
 
-		context.write(new LongWritable(profit), value);
+        context.write(new LongWritable(profit), value);
 //		System.out.println("Mapping " + profit + " ==> " + value);
 
-	}
+    }
 }
 
-// =========================================================================
-// REDUCERS
-// =========================================================================
-
 class ProfitReduce extends Reducer<LongWritable, Text, LongWritable, Text> {
-	private int k;
-	private TreeMap<Long, ArrayList<Text>> profits = new TreeMap<>();
 
-	/**
-	 * Méthode appelée avant le début de la phase reduce.
-	 */
-	@Override
-	public void setup(Context context) {
-		// On charge k
-		k = context.getConfiguration().getInt("k", 1);
-	}
+    @Override
+    public void reduce(LongWritable key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
 
-	@Override
-	public void reduce(LongWritable key, Iterable<Text> values, Context context) {
+        for (Text value : values) {
+            context.write(key, value);
+        }
+    }
+}
 
-		ArrayList<Text> vals = new ArrayList<>();
-		for (Text t : values) vals.add(t);
+class SortMap extends Mapper<LongWritable, Text, LongWritable, Text> {
 
-		profits.put(key.get(), vals);
-	}
+    private int k;
+    @Override
+    public void setup(Mapper.Context context) {
+        k = context.getConfiguration().getInt("k", 1);
+    }
 
-	@Override
-	public void cleanup(Context context) throws IOException, InterruptedException {
+    @Override
+    public void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
+        String[] tokens = value.toString().split("\t");
+        long k = Long.parseLong(tokens[0]);
+        Text v = new Text(tokens[1]);
+        if (key.get() < k) {
+//            System.out.println("Mapmap " + k + " ==> " + v);
+            context.write(new LongWritable(k), new Text(v));
+        }
 
-		List<Long> firstKeys = new ArrayList<>(profits.keySet());
-		Collections.sort(firstKeys);				// sort (low to high)
-		Collections.reverse(firstKeys);				// reverse (high to low)
-		firstKeys = firstKeys.subList(0, k);		// keep it to a minimum
+    }
+}
+
+class SortReduce extends Reducer<LongWritable, Text, LongWritable, Text> {
 
 
-		int count = 0; // k entries maximum
-		for (Long currentKey : firstKeys){
-			Iterable<Text> texts = profits.get(currentKey);
-			for (Text currentText : texts){
-				if (count++ < k){ // write at most k entries
-					context.write(new LongWritable(currentKey), currentText);
-				}
-			}
-		}
-
-	}
+    @Override
+    public void reduce(LongWritable key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
+        for (Text value : values) {
+            context.write(key, value);
+        }
+    }
 }
 
 public class TopkProfit {
@@ -152,21 +138,39 @@ public class TopkProfit {
 		conf.setInt("k", k);
 
 
-		Job topProfitJob = new Job(conf, "top_k_profit");
-//		topProfitJob.setSortComparatorClass(LongWritableInverseComparator.class);
-		topProfitJob.setOutputKeyClass(LongWritable.class);
-		topProfitJob.setOutputValueClass(Text.class);
+        Job topProfitJob = new Job(conf, "count_k_profit");
+        topProfitJob.setSortComparatorClass(LongWritableInverseComparator.class);
 
-		topProfitJob.setMapperClass(ProfitMap.class);
-		topProfitJob.setReducerClass(ProfitReduce.class);
+        topProfitJob.setOutputKeyClass(LongWritable.class);
+        topProfitJob.setOutputValueClass(Text.class);
 
-		topProfitJob.setInputFormatClass(TextInputFormat.class);
-		topProfitJob.setOutputFormatClass(TextOutputFormat.class);
+        topProfitJob.setMapperClass(ProfitMap.class);
+        topProfitJob.setReducerClass(ProfitReduce.class);
 
-		FileInputFormat.addInputPath(topProfitJob, new Path(INPUT_PATH));
-		String tempOutputPath = OUTPUT_PATH + "topProfit-" + Instant.now().getEpochSecond();
-		FileOutputFormat.setOutputPath(topProfitJob, new Path(tempOutputPath));
-		topProfitJob.waitForCompletion(true);
+        topProfitJob.setInputFormatClass(TextInputFormat.class);
+        topProfitJob.setOutputFormatClass(TextOutputFormat.class);
+
+        FileInputFormat.addInputPath(topProfitJob, new Path(INPUT_PATH));
+        Path outPath = new Path(OUTPUT_PATH + "topProfit-" + Instant.now().getEpochSecond());
+        FileOutputFormat.setOutputPath(topProfitJob, outPath);
+        topProfitJob.waitForCompletion(true);
+
+        /////////////////////////
+        Job sortJob = new Job(conf, "sort_k_profit");
+        sortJob.setSortComparatorClass(LongWritableInverseComparator.class);
+
+        sortJob.setOutputKeyClass(LongWritable.class);
+        sortJob.setOutputValueClass(Text.class);
+
+        sortJob.setMapperClass(SortMap.class);
+        sortJob.setReducerClass(SortReduce.class);
+
+        sortJob.setInputFormatClass(TextInputFormat.class);
+        sortJob.setOutputFormatClass(TextOutputFormat.class);
+
+        FileInputFormat.addInputPath(sortJob, outPath);
+        FileOutputFormat.setOutputPath(sortJob, new Path(OUTPUT_PATH + "topProfit-" + Instant.now().getEpochSecond()));
+        sortJob.waitForCompletion(true);
 
 
 

@@ -23,47 +23,6 @@ import java.util.logging.Logger;
 import java.util.logging.SimpleFormatter;
 
 
-// =========================================================================
-// COMPARATEURS
-// =========================================================================
-
-/**
- * Comparateur qui inverse la méthode de comparaison d'un sous-type T de WritableComparable (ie. une clé).
- */
-@SuppressWarnings("rawtypes")
-//class Tri.InverseComparator<T extends WritableComparable> extends WritableComparator {
-//
-//	public Tri.InverseComparator(Class<T> parameterClass) {
-//		super(parameterClass, true);
-//	}
-//
-//	/**
-//	 * Cette fonction définit l'ordre de comparaison entre 2 objets de type T.
-//	 * Dans notre cas nous voulons simplement inverser la valeur de retour de la méthode T.compareTo.
-//	 *
-//	 * @return 0 si a = b <br>
-//	 *         x > 0 si a > b <br>
-//	 *         x < 0 sinon
-//	 */
-//	@SuppressWarnings("unchecked")
-//	@Override
-//	public int compare(WritableComparable a, WritableComparable b) {
-//
-//		// On inverse le retour de la méthode de comparaison du type
-//		return -a.compareTo(b);
-//	}
-//}
-//
-///**
-// * Inverseur de la comparaison du type Text.
-// */
-//class Tri.TextInverseComparator extends Tri.InverseComparator<Text> {
-//
-//	public Tri.TextInverseComparator() {
-//		super(Text.class);
-//	}
-//}
-
 
 // =========================================================================
 // CLASSE MAIN
