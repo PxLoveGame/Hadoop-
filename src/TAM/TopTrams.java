@@ -70,9 +70,9 @@ public class TopTrams {
 
 	public static class Reduce extends Reducer<Text, Text, Text, IntWritable> {
 
-		private TreeMap<Integer, List<String>> stationsTram = new TreeMap<>();
-		private TreeMap<Integer, List<String>> stationsBus = new TreeMap<>();
-		private TreeMap<Integer, List<String>> stationsBoth = new TreeMap<>();
+		private TreeMap<Integer, List<String>> stationsTram = new TreeMap<>(Collections.reverseOrder());
+		private TreeMap<Integer, List<String>> stationsBus = new TreeMap<>(Collections.reverseOrder());
+		private TreeMap<Integer, List<String>> stationsBoth = new TreeMap<>(Collections.reverseOrder());
 
 		@Override
 		public void reduce(Text key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
@@ -113,16 +113,9 @@ public class TopTrams {
 
 		@Override
 		protected void cleanup(Context context) throws IOException, InterruptedException {
-
-			List<Integer> keys = new ArrayList<>();
-			keys.addAll(stationsTram.keySet());
-
-			Collections.reverse(keys);
-			keys = keys.subList(0, 10);
-
 			int written = 0;
 
-			for (Integer k : keys){
+			for (Integer k : stationsTram.keySet()){
 				List<String> stations = stationsTram.get(k);
 				for (String station : stations){
 					if ( written < 10 ){
