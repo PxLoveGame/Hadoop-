@@ -21,10 +21,10 @@ import java.util.logging.FileHandler;
 import java.util.logging.Logger;
 import java.util.logging.SimpleFormatter;
 
-public class AvgCoursePrice {
+public class AvgTripPrice {
 	private static final String INPUT_PATH = "input-Taxis/";
 	private static final String OUTPUT_PATH = "output/Taxis-";
-	private static final Logger LOG = Logger.getLogger(AvgCoursePrice.class.getName());
+	private static final Logger LOG = Logger.getLogger(AvgTripPrice.class.getName());
     //0  VendorID,
     //1  tpep_pickup_datetime,
     //2  tpep_dropoff_datetime,
@@ -78,17 +78,11 @@ public class AvgCoursePrice {
 			
 			String[] tokens = value.toString().split(",");
 
-			int pickupHour = Integer.parseInt(tokens[PICKUP_TIME_INDEX].split(" ")[1].split(":")[0]); // 2018-01-01 00:21:05
-            int passengerCount = Integer.parseInt(tokens[PASSENGER_COUNT_INDEX]);
-            int paymentType = Integer.parseInt(tokens[PAYMENT_TYPE_INDEX]);
-            long tripLength = (long) Float.parseFloat(tokens[TRIP_DISTANCE_INDEX]);
-            int PULocationId = Integer.parseInt(tokens[PU_LOCATION_ID_INDEX]);
-            int DOLocationId = Integer.parseInt(tokens[DO_LOCATION_ID_INDEX]);
-            long tip = (long) Float.parseFloat(tokens[TIP_INDEX]);
+
             long totalFee = (long) Float.parseFloat(tokens[TOTAL_FEE_INDEX]);
 
 
-			context.write(new Text("trip"), new LongWritable(tripLength));
+			context.write(new Text("trip"), new LongWritable(totalFee));
 //            System.out.println("Mapping " + pickupHour + " ==> " + passengerCount);
 		}
 	}
@@ -119,7 +113,7 @@ public class AvgCoursePrice {
 	public static void main(String[] args) throws Exception {
 		Configuration conf = new Configuration();
 
-		Job job = new Job(conf, "DistinctCustomers");
+		Job job = new Job(conf, "TripPriceAvg");
 
 		job.setOutputKeyClass(Text.class);
 		job.setOutputValueClass(LongWritable.class);

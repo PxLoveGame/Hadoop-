@@ -20,7 +20,7 @@ import java.util.logging.FileHandler;
 import java.util.logging.Logger;
 import java.util.logging.SimpleFormatter;
 
-public class WordCountWebPage {
+public class WordCountWebPageFilter {
 	private static final String INPUT_PATH = "input-midilibre/";
 	private static final String OUTPUT_PATH = "output/wordCount-";
 	private static final Logger LOG = Logger.getLogger(WordCountWebPage.class.getName());

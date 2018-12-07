@@ -20,7 +20,7 @@ import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 
-public class WordCount {
+public class WordCountWebPage {
 	private static final String INPUT_PATH = "input-wordCount/";
 	private static final String OUTPUT_PATH = "output/wordCount-";
 	private static final Logger LOG = Logger.getLogger(WordCount.class.getName());

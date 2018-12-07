@@ -20,10 +20,10 @@ import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 
-public class GroupByCustomerID {
+public class GroupByCustomerIDNoDoublon {
 	private static final String INPUT_PATH = "input-groupBy/";
 	private static final String OUTPUT_PATH = "output/groupBy-";
-	private static final Logger LOG = Logger.getLogger(GroupByCustomerID.class.getName());
+	private static final Logger LOG = Logger.getLogger(GroupByCustomerIDNoDoublon.class.getName());
 
 	static {
 		System.setProperty("java.util.logging.SimpleFormatter.format", "%5$s%n%6$s");
