@@ -23,7 +23,7 @@ import java.util.logging.SimpleFormatter;
 public class WordCountWebPageFilter {
 	private static final String INPUT_PATH = "input-midilibre/";
 	private static final String OUTPUT_PATH = "output/wordCount-";
-	private static final Logger LOG = Logger.getLogger(WordCountWebPage.class.getName());
+	private static final Logger LOG = Logger.getLogger(WordCountWebPageFilter.class.getName());
 
 	/*
 	 * Ce bloc initialise le logger 'LOG'. Celui-ci permet d'afficher des messages dans la console, le classique System.out.print() ne fonctionnant pas dans le contexte d'exécution normal de Hadoop.
@@ -63,12 +63,12 @@ public class WordCountWebPageFilter {
 
 
 //			System.out.println("Words : ");
-			for (int i = 0; i < words.length; i++) {
-				if (!words[i].equals("")) {
-					System.out.println(words[i]);
-					context.write(new Text(words[i]), one);
-				}
-			}
+            for (String word : words) {
+                if (!word.equals("")) {
+                    System.out.println(word);
+                    context.write(new Text(word), one);
+                }
+            }
 		}
 	}
 

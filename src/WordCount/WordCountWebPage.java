@@ -23,7 +23,7 @@ import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 public class WordCountWebPage {
 	private static final String INPUT_PATH = "input-wordCount/";
 	private static final String OUTPUT_PATH = "output/wordCount-";
-	private static final Logger LOG = Logger.getLogger(WordCount.class.getName());
+	private static final Logger LOG = Logger.getLogger(WordCountWebPage.class.getName());
 
 	/*
 	 * Ce bloc initialise le logger 'LOG'. Celui-ci permet d'afficher des messages dans la console, le classique System.out.print() ne fonctionnant pas dans le contexte d'exécution normal de Hadoop.
