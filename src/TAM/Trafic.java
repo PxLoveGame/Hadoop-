@@ -26,11 +26,7 @@ public class Trafic {
 	private static final String INPUT_PATH = "input-TAM/";
 	private static final String OUTPUT_PATH = "output/TAM_horairesService-";
 	private static final Logger LOG = Logger.getLogger(Trafic.class.getName());
-	private static final IntWritable one = new IntWritable(1);
 
-
-
-//	public static final int STOP_ID_INDEX = 2;
 	private static final int STOP_NAME_INDEX = 3; // ex. 'OCCITANIE'
 	private static final int ROUTE_NAME_INDEX = 4; // ex. '1' pour Ligne 1
 	private static final int DIRECTION_INDEX = 6; // format hh:ii:ss
@@ -132,17 +128,8 @@ public class Trafic {
 
 			context.write(new Text(k), new Text(v));
 
-//			System.out.println("Arrêt " + stop_name + "("+hour + "h) : busAller="+busAller + ", busRetour="+busRetour + ", tramAller="+tramsAller + ", tramRetour="+tramsRetour);
-
 		}
 
-//		@Override
-//		protected void cleanup(Context context) throws IOException, InterruptedException {
-//
-//			System.out.println("Cleanup");
-//			System.out.println(stationsTram);
-//
-//		}
 	}
 
 	public static void main(String[] args) throws Exception {

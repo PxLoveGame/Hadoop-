@@ -46,7 +46,6 @@ class ClientProfitReduce extends Reducer<LongWritable, Text, LongWritable, Text>
 
 
 		for (Text value : values){
-//			System.out.println("Reduce : " + key + " ==> " + value);
 			context.write(key, value);
 		}
 
@@ -67,12 +66,8 @@ class TopMap extends Mapper<LongWritable, Text, Text, LongWritable> {
 
 		String[] tokens = value.toString().split("\t");
 
-		Long profit = (long) Float.parseFloat(tokens[0]);
+		long profit = (long) Float.parseFloat(tokens[0]);
 		String customerId = tokens[1];
-
-
-
-
 
 		if (key.get() < k * value.getLength()) {
 			context.write(new Text(customerId), new LongWritable(profit));
@@ -90,7 +85,6 @@ class TopReduce extends Reducer<Text, LongWritable, Text, LongWritable> {
 
 
 		for (LongWritable value : values){
-//			System.out.println("Re_reduce : " + key + " ==> " + value);
 			context.write(key, value);
 		}
 	}

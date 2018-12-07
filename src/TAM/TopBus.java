@@ -28,11 +28,7 @@ public class TopBus {
 	private static final String INPUT_PATH = "input-TAM/";
 	private static final String OUTPUT_PATH = "output/TAM_horairesService-";
 	private static final Logger LOG = Logger.getLogger(TopBus.class.getName());
-	private static final IntWritable one = new IntWritable(1);
 
-
-
-//	public static final int STOP_ID_INDEX = 2;
 	private static final int STOP_NAME_INDEX = 3; // ex. 'OCCITANIE'
 	private static final int ROUTE_NAME_INDEX = 4; // ex. '1' pour Ligne 1
 	private static final int DEPARTURE_TIME_INDEX = 7; // format hh:ii:ss
@@ -59,8 +55,6 @@ public class TopBus {
 			String[] tokens = value.toString().split(";");
 			String stop_name  = tokens[STOP_NAME_INDEX];
 			String route_name  = tokens[ROUTE_NAME_INDEX];
-			String hour = tokens[DEPARTURE_TIME_INDEX].split(":")[0]; // sur 'hh:ii:ss' ne garder que 'hh'
-
 
 			Text k = new Text( stop_name);
 			context.write(k, new Text(route_name));
@@ -77,8 +71,6 @@ public class TopBus {
 		@Override
 		public void reduce(Text key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
 
-//			System.out.println("Reduce " + key + "");
-
 			int trams = 0;
 			int buses = 0;
 			for(Text t: values){
@@ -89,11 +81,6 @@ public class TopBus {
 					buses++;
 				}
 			}
-
-//			System.out.println("Station " + key + " : " + buses + " bus, " + trams + " trams");
-
-//			context.write(key, new Text(buses + "\t" + trams));
-
 			if (!stationsTram.containsKey(trams)){
 				stationsTram.put(trams, new ArrayList<>());
 			}
@@ -114,8 +101,7 @@ public class TopBus {
 		@Override
 		protected void cleanup(Context context) throws IOException, InterruptedException {
 
-			List<Integer> keys = new ArrayList<>();
-			keys.addAll(stationsBus.keySet());
+			List<Integer> keys = new ArrayList<>(stationsBus.keySet());
 
 			Collections.reverse(keys);
 			keys = keys.subList(0, 10);

@@ -27,8 +27,6 @@ public class Occitanie {
 	private static final IntWritable one = new IntWritable(1);
 
 
-
-//	public static final int STOP_ID_INDEX = 2;
 	private static final int STOP_NAME_INDEX = 3; // ex. 'OCCITANIE'
 	private static final int ROUTE_NAME_INDEX = 4; // ex. '1' pour Ligne 1
 	private static final int DEPARTURE_TIME_INDEX = 7; // format hh:ii:ss
@@ -69,8 +67,6 @@ public class Occitanie {
 		@Override
 		public void reduce(Text key, Iterable<IntWritable> values, Context context)
 				throws IOException, InterruptedException {
-
-//			System.out.println("Reduce " + key);
 
 			int sum = 0;
 			for(IntWritable t: values){

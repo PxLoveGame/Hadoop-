@@ -1,12 +1,5 @@
 package GroupBy;
 
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.time.Instant;
-import java.util.logging.FileHandler;
-import java.util.logging.Logger;
-import java.util.logging.SimpleFormatter;
-
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.DoubleWritable;
@@ -19,6 +12,13 @@ import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
+
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.time.Instant;
+import java.util.logging.FileHandler;
+import java.util.logging.Logger;
+import java.util.logging.SimpleFormatter;
 
 public class GroupByCustomerIDNoDoublon {
 	private static final String INPUT_PATH = "input-groupBy/";
@@ -43,12 +43,10 @@ public class GroupByCustomerIDNoDoublon {
 		public void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
 			if (key.get() == 0) return;
 
-//			System.out.println("Mapping :" + key + " ==> " + value);
 			String[] colonnes = value.toString().split(",");
 			String customerID = colonnes[5];
 			String profitStr = colonnes[20];
-			
-//			System.out.println(customerID + " > " + profitStr);
+
 			float profit = 0;
 			try {
 				profit = Float.parseFloat(profitStr);
@@ -67,13 +65,9 @@ public class GroupByCustomerIDNoDoublon {
 		@Override
 		public void reduce(Text key, Iterable<DoubleWritable> values, Context context)
 				throws IOException, InterruptedException {
-			
-//			double sum = 0;
-			
+
 			for(DoubleWritable val: values){
-//				sum += val.get();
 				context.write(key, val); // autoriser les doublons
-//				context.write(key, new DoubleWritable(sum));
 			}
 
 		}

@@ -24,11 +24,6 @@ import java.util.logging.SimpleFormatter;
 
 
 
-
-// =========================================================================
-// CLASSE MAIN
-// =========================================================================
-
 public class TriAvecComparaisonAsc {
 	private static final String INPUT_PATH = "input-groupBy/";
 	private static final String OUTPUT_PATH = "output/9-TriAvecComparaison-";
@@ -60,23 +55,20 @@ public class TriAvecComparaisonAsc {
 			final int ORDER_DATE_POSITION = 2;
 
 			String dateStr = value.toString().split(",")[ORDER_DATE_POSITION];
-			String formatedDate = dateStr;
+			String formatedDate;
 
 			DateFormat inDateFormat = new SimpleDateFormat("m/dd/yy"); // 1/30/16
 			DateFormat outDateFormat = new SimpleDateFormat("yyyy/mm/dd");
-			Date date = null;
+			Date date;
 			try {
 				date = inDateFormat.parse(dateStr);
 				formatedDate = outDateFormat.format(date);
 
 			} catch (ParseException e) {
+				LOG.severe("Error parsing " + value);
 				e.printStackTrace();
 				return;
 			}
-
-//			System.out.println("Date parsed as " + date.getTime());
-
-//			System.out.println("Mapping " + key + " ==> " + date.getTime() + " : " + dateStr);
 			context.write( new Text(formatedDate), new Text(value) );
 		}
 	}

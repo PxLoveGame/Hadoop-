@@ -1,10 +1,5 @@
 package Tri;
 
-
-// =========================================================================
-// COMPARATEURS
-// =========================================================================
-
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.WritableComparable;
 import org.apache.hadoop.io.WritableComparator;

@@ -66,7 +66,6 @@ public class JoinOrdersAndCustomersSumPrice {
 			}
 			
 			if(!customerId.equals("")){
-				//System.out.println("Mapping :" + customerId + " ==> " + type + " ~ " + content);
 				context.write(new Text(customerId), new Text( type + "|" + content ));
 			}
 			
@@ -85,7 +84,7 @@ public class JoinOrdersAndCustomersSumPrice {
 			
 			for(Text t : values){
 				
-				String type = "";
+				String type;
 				
 				if(t.getLength() != 0){
 				
@@ -100,7 +99,7 @@ public class JoinOrdersAndCustomersSumPrice {
 					}				
 				}
 			}
-			if(!customer.equals("") && sum != 0){
+			if(!customer.toString().equals("") && sum != 0){
 				context.write(customer, new LongWritable(sum));
 			}
 		}

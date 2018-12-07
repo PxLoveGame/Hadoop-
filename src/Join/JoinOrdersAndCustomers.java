@@ -67,7 +67,6 @@ public class JoinOrdersAndCustomers {
 			}
 			
 			if(!customerId.equals("")){
-				//System.out.println("Mapping :" + customerId + " ==> " + type + " ~ " + content);
 				context.write(new Text(customerId), new Text( type + "|" + content ));
 			}
 			
@@ -86,7 +85,7 @@ public class JoinOrdersAndCustomers {
 			
 			for(Text t : values){
 				
-				String type = "";
+				String type;
 				
 				if(t.getLength() != 0){
 				
@@ -101,7 +100,7 @@ public class JoinOrdersAndCustomers {
 					}				
 				}
 			}
-			if(!customer.equals("")){
+			if(!customer.toString().equals("")){
 				for(Text order: orders){
 					context.write(customer, order);
 				}

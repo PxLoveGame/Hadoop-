@@ -15,18 +15,9 @@ import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 
 import java.io.IOException;
 import java.time.Instant;
-import java.util.*;
 import java.util.logging.FileHandler;
 import java.util.logging.Logger;
 import java.util.logging.SimpleFormatter;
-
-
-/*
- * Jusqu'à présent nous avons défini nos mappers et reducers comme des classes internes à notre classe principale.
- * Dans des applications réelles de map-reduce cela ne sera généralement pas le cas, les classes seront probablement localisées dans d'autres fichiers.
- * Dans cet exemple, nous avons défini TopK.ProfitMap et TopK.ProfitReduce en dehors de notre classe principale.
- * Il se pose alors le problème du passage du paramètre 'k' dans notre reducer, car il n'est en effet plus possible de déclarer un paramètre k dans notre classe principale qui serait partagé avec ses classes internes ; c'est la que la Configuration du Job entre en jeu.
- */
 
 
 
@@ -41,10 +32,8 @@ class ProfitMap extends Mapper<LongWritable, Text, LongWritable, Text> {
         String[] values = value.toString().split(",");
 
         long profit = (long) Float.parseFloat(values[20]);
-//		String customerId = values[5];
 
         context.write(new LongWritable(profit), value);
-//		System.out.println("Mapping " + profit + " ==> " + value);
 
     }
 }
@@ -74,7 +63,6 @@ class SortMap extends Mapper<LongWritable, Text, LongWritable, Text> {
         long k = Long.parseLong(tokens[0]);
         Text v = new Text(tokens[1]);
         if (key.get() < k) {
-//            System.out.println("Mapmap " + k + " ==> " + v);
             context.write(new LongWritable(k), new Text(v));
         }
 

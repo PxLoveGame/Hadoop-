@@ -59,23 +59,20 @@ public class TriAvecComparaisonDesc {
 			final int ORDER_DATE_POSITION = 2;
 
 			String dateStr = value.toString().split(",")[ORDER_DATE_POSITION];
-			String formatedDate = dateStr;
+			String formatedDate;
 
 			DateFormat inDateFormat = new SimpleDateFormat("m/dd/yy"); // 1/30/16
 			DateFormat outDateFormat = new SimpleDateFormat("yyyy/mm/dd");
-			Date date = null;
+			Date date;
 			try {
 				date = inDateFormat.parse(dateStr);
 				formatedDate = outDateFormat.format(date);
 
 			} catch (ParseException e) {
+				LOG.severe("Error parsing " + value);
 				e.printStackTrace();
 				return;
 			}
-
-//			System.out.println("Date parsed as " + date.getTime());
-
-//			System.out.println("Mapping " + key + " ==> " + date.getTime() + " : " + dateStr);
 			context.write( new Text(formatedDate), new Text(value) );
 		}
 	}
@@ -88,8 +85,6 @@ public class TriAvecComparaisonDesc {
 
 		public void reduce(Text key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
 			for (Text value : values){
-
-
 				context.write(key, value);
 			}
 		}
@@ -104,10 +99,6 @@ public class TriAvecComparaisonDesc {
 
 		Job job = new Job(conf, "9-Sort");
 
-		/*
-		 * Affectation de la classe du comparateur au job.
-		 * Celui-ci sera appelé durant la phase de shuffle.
-		 */
 		job.setSortComparatorClass(TextInverseComparator.class);
 		
 		job.setOutputKeyClass(Text.class);

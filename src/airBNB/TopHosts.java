@@ -102,7 +102,7 @@ public class TopHosts {
 
             int count = 0;
 
-            for (IntWritable value : values){
+            for (IntWritable ignored : values){
                 count ++;
             }
 
