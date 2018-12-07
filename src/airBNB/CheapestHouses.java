@@ -21,10 +21,10 @@ import java.util.logging.FileHandler;
 import java.util.logging.Logger;
 import java.util.logging.SimpleFormatter;
 
-public class TopHosts {
+public class CheapestHouses {
 	private static final String INPUT_PATH = "input-AirBNB/";
 	private static final String OUTPUT_PATH = "output/AirBNB-";
-	private static final Logger LOG = Logger.getLogger(TopHosts.class.getName());
+	private static final Logger LOG = Logger.getLogger(CheapestHouses.class.getName());
 	//0  id,
 	//1  name,
 	//2  host_id,
