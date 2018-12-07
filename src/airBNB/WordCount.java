@@ -1,5 +1,6 @@
 package airBNB;
 
+import Tri.IntWritableInverseComparator;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IntWritable;
@@ -25,21 +26,11 @@ public class WordCount {
 	private static final String OUTPUT_PATH = "output/AirBNB-";
 	private static final Logger LOG = Logger.getLogger(WordCount.class.getName());
 
-    private static final int OFFER_ID_INDEX = 0;
     private static final int DESCRIPTION_INDEX = 1;
-	private static final int HOST_ID_INDEX = 2;
-	private static final int HOST_NAME_INDEX = 3;
-    private static final int NEIGHBOURHOOD_INDEX = 5;
-    private static final int LAT_INDEX = 6;
-    private static final int LON_INDEX = 7;
-	private static final int ROOM_TYPE_INDEX = 8;
-	private static final int PRICE_INDEX = 9;
-	private static final int MINIMUM_NIGHT_INDEX = 10;
-	private static final int NB_REVIEWS_INDEX = 11;
 	private static final int VALID_TOKENS_LENGTH = 16;
 	private static final IntWritable one = new IntWritable(1);
 
-	private static int TOP_LIMITER = 10; // k
+    private static final int MIN_OCCURENCES = 100;
 
 
 
@@ -74,7 +65,7 @@ public class WordCount {
             try {
 
                 String description = tokens[DESCRIPTION_INDEX].toLowerCase();
-                description = description.replaceAll("[^\\x00-\\x7F]", ""); // remove non ASCII
+                description = description.replaceAll("[^a-zA-Z]", " "); // remove non ASCII
                 description = description.replaceAll("\\.|'|!|\\?|,|:|‘|;|\"|\\(|\\)|\\d*", ""); // ponctuation, chiffres etc.
                 String[] words = description.split("\\s+");
                 for (String w : words){
@@ -92,7 +83,7 @@ public class WordCount {
         }
     }
 
-    public static class Reduce extends Reducer<Text, IntWritable, Text, Text> {
+    public static class Reduce extends Reducer<Text, IntWritable, Text, IntWritable> {
 
 
         @Override
@@ -104,28 +95,39 @@ public class WordCount {
                 count++;
             }
 
-            System.out.println("Reduce " + key + " ==> " + count);
 
-//            String[] tokens;
-//            int count = 0;
-//            float lat, lon;
-//            float avgLat, avgLon;
-//            float sumLat = 0, sumLon = 0;
-//
-//            for (Text value : values){
-//                count++;
-//                tokens = value.toString().split(";");
-//                lat = Float.parseFloat(tokens[0]);
-//                lon = Float.parseFloat(tokens[1]);
-//
-//                sumLat += lat;
-//                sumLon += lon;
-//            }
-//
-//            avgLat = sumLat / count;
-//            avgLon = sumLon / count;
-//
-//            context.write(key, new Text( avgLat + "\t" + avgLon ));
+            if (count > MIN_OCCURENCES) {
+                context.write(key, new IntWritable(count));
+            }
+        }
+
+    }
+
+
+    public static class SortMap extends Mapper<LongWritable, Text, IntWritable, Text> {
+
+        @Override
+        public void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
+
+            String[] tokens = value.toString().split("\t");
+            int count = Integer.parseInt(tokens[1]);
+            String word = tokens[0];
+
+            context.write(new IntWritable(count), new Text(word));
+
+        }
+    }
+
+    public static class SortReduce extends Reducer<IntWritable, Text, Text, IntWritable> {
+
+
+        @Override
+        public void reduce(IntWritable key, Iterable<Text> values, Context context)
+                throws IOException, InterruptedException {
+
+            for (Text value : values) {
+                context.write(value, key);
+            }
         }
 
     }
@@ -133,22 +135,44 @@ public class WordCount {
 	public static void main(String[] args) throws Exception {
 		Configuration conf = new Configuration();
 
-		Job job = new Job(conf, "CountOffers");
+        Job job = new Job(conf, "CountWords");
 
-		job.setOutputKeyClass(Text.class);
-		job.setOutputValueClass(IntWritable.class);
+        job.setOutputKeyClass(Text.class);
+        job.setOutputValueClass(IntWritable.class);
 
-		job.setMapperClass(Map.class);
-		job.setReducerClass(Reduce.class);
+        job.setMapperClass(Map.class);
+        job.setReducerClass(Reduce.class);
 
-		job.setInputFormatClass(TextInputFormat.class);
-		job.setOutputFormatClass(TextOutputFormat.class);
+        job.setInputFormatClass(TextInputFormat.class);
+        job.setOutputFormatClass(TextOutputFormat.class);
 
-		FileInputFormat.addInputPath(job, new Path(INPUT_PATH));
-		Path outPath = new Path(OUTPUT_PATH + "-" + MethodHandles.lookup().lookupClass().getSimpleName() + Instant.now().getEpochSecond());
-		FileOutputFormat.setOutputPath(job, outPath);
+        FileInputFormat.addInputPath(job, new Path(INPUT_PATH));
+        Path outPath = new Path( OUTPUT_PATH + "-" + MethodHandles.lookup().lookupClass().getSimpleName() + Instant.now().getEpochSecond() );
+        FileOutputFormat.setOutputPath(job, outPath);
 
-		job.waitForCompletion(true);
+        job.waitForCompletion(true);
+
+        /////////////////////////////////////////////////
+
+
+        Job sortJob = new Job(conf, "sort");
+
+        sortJob.setOutputKeyClass(IntWritable.class);
+        sortJob.setOutputValueClass(Text.class);
+
+        sortJob.setSortComparatorClass(IntWritableInverseComparator.class);
+
+        sortJob.setMapperClass(SortMap.class);
+        sortJob.setReducerClass(SortReduce.class);
+
+        sortJob.setInputFormatClass(TextInputFormat.class);
+        sortJob.setOutputFormatClass(TextOutputFormat.class);
+
+        FileInputFormat.addInputPath(sortJob, outPath);
+        outPath = new Path( OUTPUT_PATH + "-" + MethodHandles.lookup().lookupClass().getSimpleName() + Instant.now().getEpochSecond() );
+        FileOutputFormat.setOutputPath(sortJob, outPath);
+
+        sortJob.waitForCompletion(true);
 
 	}
 }
