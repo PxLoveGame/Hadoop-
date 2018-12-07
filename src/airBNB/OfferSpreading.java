@@ -16,10 +16,7 @@ import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
-import java.util.TreeMap;
 import java.util.logging.FileHandler;
 import java.util.logging.Logger;
 import java.util.logging.SimpleFormatter;
@@ -29,21 +26,10 @@ public class OfferSpreading {
 	private static final String OUTPUT_PATH = "output/AirBNB-";
 	private static final Logger LOG = Logger.getLogger(OfferSpreading.class.getName());
 
-    private static final int OFFER_ID_INDEX = 0;
-	private static final int HOST_ID_INDEX = 2;
-	private static final int HOST_NAME_INDEX = 3;
 	private static final int ROOM_TYPE_INDEX = 8;
-	private static final int PRICE_INDEX = 9;
-	private static final int MINIMUM_NIGHT_INDEX = 10;
-	private static final int NB_REVIEWS_INDEX = 11;
 	private static final int VALID_TOKENS_LENGTH = 16;
 
 	private static final IntWritable one = new IntWritable(1);
-
-
-
-
-
 
 
 	static {
@@ -74,9 +60,6 @@ public class OfferSpreading {
             if (tokens.length != VALID_TOKENS_LENGTH) return; // erreur de parsing Hadoop (typiquement, la description contient un \n)
 
             try {
-                int offerId = Integer.parseInt(tokens[OFFER_ID_INDEX]);
-
-                long price = (long) Float.parseFloat(tokens[PRICE_INDEX]);
 
                 String roomType = tokens[ROOM_TYPE_INDEX];
 
@@ -86,7 +69,6 @@ public class OfferSpreading {
                 LOG.severe("Error parsing line " + key + " : " + value);
                 e.printStackTrace();
             }
-
         }
     }
 
@@ -99,20 +81,17 @@ public class OfferSpreading {
         public void reduce(Text key, Iterable<IntWritable> values, Context context)
                 throws IOException, InterruptedException {
 
-
             int count = 0;
 
             for (IntWritable ignored : values){
                 count++;
             }
-
             repartition.put(key.toString(), count);
         }
 
         @Override
         protected void cleanup(Context context) throws IOException, InterruptedException {
             float sum = 0;
-
 
             for (Integer v : repartition.values()){
                 sum += v;
@@ -124,8 +103,6 @@ public class OfferSpreading {
 
                 context.write(new Text(type), new Text(String.valueOf(ratio)));
             }
-
-
         }
 
     }

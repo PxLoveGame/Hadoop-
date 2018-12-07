@@ -1,6 +1,5 @@
 package airBNB;
 
-import Tri.IntWritableInverseComparator;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IntWritable;
@@ -30,19 +29,12 @@ public class CheapestHouses {
 	private static final Logger LOG = Logger.getLogger(CheapestHouses.class.getName());
 
     private static final int OFFER_ID_INDEX = 0;
-	private static final int HOST_ID_INDEX = 2;
-	private static final int HOST_NAME_INDEX = 3;
 	private static final int ROOM_TYPE_INDEX = 8;
 	private static final int PRICE_INDEX = 9;
-	private static final int MINIMUM_NIGHT_INDEX = 10;
-	private static final int NB_REVIEWS_INDEX = 11;
 	private static final int VALID_TOKENS_LENGTH = 16;
 
 	private static int TOP_LIMITER = 10; // k
-
-
-
-
+	
 	static {
 		System.setProperty("java.util.logging.SimpleFormatter.format", "%5$s%n%6$s");
 
@@ -66,7 +58,6 @@ public class CheapestHouses {
             if (value.toString().equals("")) return;
 
             String[] tokens = value.toString().split(",(\"[^\"]*\")?"); // match ',' not enclosed by '"'
-
 
             if (tokens.length != VALID_TOKENS_LENGTH) return; // erreur de parsing Hadoop (typiquement, la description contient un \n)
 
@@ -126,34 +117,6 @@ public class CheapestHouses {
 
     }
 
-//    public static class SortMap extends Mapper<LongWritable, Text, IntWritable, Text> {
-//
-//        @Override
-//        public void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
-//
-//            String[] tokens = value.toString().split("\t");
-//            String host= tokens[0];
-//            int offers = Integer.parseInt(tokens[1]);
-//
-//            context.write(new IntWritable(offers), new Text(host));
-//        }
-//    }
-//
-//    public static class SortReduce extends Reducer<IntWritable, Text, Text, IntWritable> {
-//
-//
-//        @Override
-//        public void reduce(IntWritable key, Iterable<Text> values, Context context)
-//                throws IOException, InterruptedException {
-//
-//            for (Text value : values){
-//                context.write(value, key);
-//            }
-//
-//        }
-//
-//    }
-
 	public static void main(String[] args) throws Exception {
 		Configuration conf = new Configuration();
 
@@ -174,23 +137,5 @@ public class CheapestHouses {
 
 		job.waitForCompletion(true);
 
-		//////////////////////////////////
-
-//        Job sortJob = new Job(conf, "BestOffers");
-//
-//        sortJob.setOutputKeyClass(IntWritable.class);
-//        sortJob.setOutputValueClass(Text.class);
-//
-//        sortJob.setSortComparatorClass(IntWritableInverseComparator.class);
-//
-//        sortJob.setMapperClass(SortMap.class);
-//        sortJob.setReducerClass(SortReduce.class);
-//
-//        sortJob.setInputFormatClass(TextInputFormat.class);
-//        sortJob.setOutputFormatClass(TextOutputFormat.class);
-//
-//        FileInputFormat.addInputPath(sortJob, outPath);
-//        FileOutputFormat.setOutputPath(sortJob, new Path(OUTPUT_PATH + "-" + MethodHandles.lookup().lookupClass().getSimpleName() + Instant.now().getEpochSecond()));
-//        sortJob.waitForCompletion(true);
 	}
 }

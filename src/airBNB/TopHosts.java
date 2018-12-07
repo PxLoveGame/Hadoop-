@@ -26,15 +26,9 @@ public class TopHosts {
 	private static final String OUTPUT_PATH = "output/AirBNB-";
 	private static final Logger LOG = Logger.getLogger(TopHosts.class.getName());
 
-	private static final int OFFER_ID_INDEX = 0;
 	private static final int HOST_ID_INDEX = 2;
 	private static final int HOST_NAME_INDEX = 3;
-	private static final int ROOM_TYPE_INDEX = 8;
-	private static final int PRICE_INDEX = 9;
-	private static final int MINIMUM_NIGHT_INDEX = 10;
-	private static final int NB_REVIEWS_INDEX = 11;
 	private static final int VALID_TOKENS_LENGTH = 16;
-
 
 	private static final IntWritable one = new IntWritable(1);
 
@@ -63,7 +57,6 @@ public class TopHosts {
 
             String[] tokens = value.toString().split(",(\"[^\"]*\")?"); // match ',' not enclosed by '"'
 
-
             if (tokens.length != VALID_TOKENS_LENGTH) return; // erreur de parsing Hadoop (typiquement, la description contient un \n)
 
             int hostId = Integer.parseInt(tokens[HOST_ID_INDEX]);
@@ -74,7 +67,6 @@ public class TopHosts {
     }
 
     public static class Reduce extends Reducer<Text, IntWritable, Text, IntWritable> {
-
 
         @Override
         public void reduce(Text key, Iterable<IntWritable> values, Context context)
@@ -87,9 +79,7 @@ public class TopHosts {
             }
 
             context.write(key, new IntWritable(count));
-
         }
-
     }
 
     public static class SortMap extends Mapper<LongWritable, Text, IntWritable, Text> {
@@ -115,11 +105,9 @@ public class TopHosts {
             for (Text value : values){
                 context.write(value, key);
             }
-
         }
-
     }
-
+    
 	public static void main(String[] args) throws Exception {
 		Configuration conf = new Configuration();
 

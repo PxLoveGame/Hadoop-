@@ -23,11 +23,9 @@ import java.util.logging.SimpleFormatter;
 
 class ProfitMap extends Mapper<LongWritable, Text, LongWritable, Text> {
 
-//	private int k;
-
     @Override
     public void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
-        if (key.get() == 0) return; // retirer le header CSV
+        if (key.get() == 0) return; // retire header CSV
 
         String[] values = value.toString().split(",");
 
@@ -70,7 +68,6 @@ class SortMap extends Mapper<LongWritable, Text, LongWritable, Text> {
 }
 
 class SortReduce extends Reducer<LongWritable, Text, LongWritable, Text> {
-
 
     @Override
     public void reduce(LongWritable key, Iterable<Text> values, Context context) throws IOException, InterruptedException {

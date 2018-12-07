@@ -2,7 +2,7 @@ package airBNB;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.io.IntWritable;
+
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
@@ -16,9 +16,6 @@ import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.TreeMap;
 import java.util.logging.FileHandler;
 import java.util.logging.Logger;
 import java.util.logging.SimpleFormatter;
@@ -28,22 +25,10 @@ public class GeoCenter {
 	private static final String OUTPUT_PATH = "output/AirBNB-";
 	private static final Logger LOG = Logger.getLogger(GeoCenter.class.getName());
 
-    private static final int OFFER_ID_INDEX = 0;
-	private static final int HOST_ID_INDEX = 2;
-	private static final int HOST_NAME_INDEX = 3;
     private static final int NEIGHBOURHOOD_INDEX = 5;
     private static final int LAT_INDEX = 6;
     private static final int LON_INDEX = 7;
-	private static final int ROOM_TYPE_INDEX = 8;
-	private static final int PRICE_INDEX = 9;
-	private static final int MINIMUM_NIGHT_INDEX = 10;
-	private static final int NB_REVIEWS_INDEX = 11;
 	private static final int VALID_TOKENS_LENGTH = 16;
-
-	private static int TOP_LIMITER = 10; // k
-
-
-
 
 	static {
 		System.setProperty("java.util.logging.SimpleFormatter.format", "%5$s%n%6$s");
