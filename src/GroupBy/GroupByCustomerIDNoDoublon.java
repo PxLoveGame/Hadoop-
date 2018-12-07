@@ -3,10 +3,6 @@ package GroupBy;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
 import java.util.logging.FileHandler;
 import java.util.logging.Logger;
 import java.util.logging.SimpleFormatter;
@@ -24,10 +20,10 @@ import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 
-public class GroupByOrder {
+public class GroupByCustomerID {
 	private static final String INPUT_PATH = "input-groupBy/";
 	private static final String OUTPUT_PATH = "output/groupBy-";
-	private static final Logger LOG = Logger.getLogger(GroupByOrder.class.getName());
+	private static final Logger LOG = Logger.getLogger(GroupByCustomerID.class.getName());
 
 	static {
 		System.setProperty("java.util.logging.SimpleFormatter.format", "%5$s%n%6$s");
@@ -41,51 +37,45 @@ public class GroupByOrder {
 		}
 	}
 
-	public static class Map extends Mapper<LongWritable, Text, Text, Text> {
+	public static class Map extends Mapper<LongWritable, Text, Text, DoubleWritable> {
 
 		@Override
 		public void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
-			System.out.println("Mapping :" + key + " ==> " + value);
+			if (key.get() == 0) return;
+
+//			System.out.println("Mapping :" + key + " ==> " + value);
 			String[] colonnes = value.toString().split(",");
-			String orderID = colonnes[1];
-			String productID = colonnes[13];
-			String quantitySalesStr = colonnes[18];
+			String customerID = colonnes[5];
+			String profitStr = colonnes[20];
 			
-			System.out.println(orderID + " > " + productID + " > " + quantitySalesStr);
-			int quantitySales = 0;
+//			System.out.println(customerID + " > " + profitStr);
+			float profit = 0;
 			try {
-				quantitySales = Integer.parseInt(quantitySalesStr);
+				profit = Float.parseFloat(profitStr);
 			}
 			catch(Exception e){
-				System.err.println(e);
+				e.printStackTrace();
+				LOG.severe("Error parsing invalid profit  in " + value);
 			}
 			
-			
-			String values = productID + "," + quantitySales;
-			context.write(new Text(orderID), new Text(values));
+			context.write(new Text(customerID), new DoubleWritable(profit));
 		}
 	}
 
-	public static class Reduce extends Reducer<Text, Text, Text, Text> {
+	public static class Reduce extends Reducer<Text, DoubleWritable, Text, DoubleWritable> {
 
 		@Override
-		public void reduce(Text key, Iterable<Text> values, Context context)
+		public void reduce(Text key, Iterable<DoubleWritable> values, Context context)
 				throws IOException, InterruptedException {
-					
-			float totalquantity = 0;
-			Set<String> products = new HashSet<>(); 
 			
-			for(Text val: values){
-				String[] colonnes = val.toString().split(",");
-				String productID = colonnes[0];
-				int quantity = Integer.parseInt(colonnes[1]);
-				
-				products.add(productID);
-				totalquantity += quantity;
+//			double sum = 0;
+			
+			for(DoubleWritable val: values){
+//				sum += val.get();
+				context.write(key, val); // autoriser les doublons
+//				context.write(key, new DoubleWritable(sum));
 			}
-			
-			String results = "Nb distinct Products : " + products.size() + ", Total Quantity : " + totalquantity; 
-			context.write(key, new Text(results));
+
 		}
 	}
 
@@ -100,7 +90,7 @@ public class GroupByOrder {
 		job.setMapperClass(Map.class);
 		job.setReducerClass(Reduce.class);
 
-		job.setOutputValueClass(Text.class); 
+		job.setOutputValueClass(DoubleWritable.class); 
 
 		job.setInputFormatClass(TextInputFormat.class);
 		job.setOutputFormatClass(TextOutputFormat.class);
