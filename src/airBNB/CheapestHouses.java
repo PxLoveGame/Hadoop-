@@ -17,6 +17,9 @@ import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.TreeMap;
 import java.util.logging.FileHandler;
 import java.util.logging.Logger;
 import java.util.logging.SimpleFormatter;
@@ -25,22 +28,8 @@ public class CheapestHouses {
 	private static final String INPUT_PATH = "input-AirBNB/";
 	private static final String OUTPUT_PATH = "output/AirBNB-";
 	private static final Logger LOG = Logger.getLogger(CheapestHouses.class.getName());
-	//0  id,
-	//1  name,
-	//2  host_id,
-	//3  host_name,
-	//4  neighbourhood_group,
-	//5  neighbourhood,
-	//6  latitude,
-	//7  longitude,
-	//8  room_type,
-	//9  price,
-	//10 minimum_nights,
-	//11 number_of_reviews,
-	//12 last_review,
-	//13 reviews_per_month,
-	//14 calculated_host_listings_count,
-	//15 availability_365
+
+    private static final int OFFER_ID_INDEX = 0;
 	private static final int HOST_ID_INDEX = 2;
 	private static final int HOST_NAME_INDEX = 3;
 	private static final int ROOM_TYPE_INDEX = 8;
@@ -49,8 +38,7 @@ public class CheapestHouses {
 	private static final int NB_REVIEWS_INDEX = 11;
 	private static final int VALID_TOKENS_LENGTH = 16;
 
-
-	private static final IntWritable one = new IntWritable(1);
+	private static int TOP_LIMITER = 10; // k
 
 
 
@@ -69,7 +57,7 @@ public class CheapestHouses {
 
 
 
-    public static class Map extends Mapper<LongWritable, Text, Text, IntWritable> {
+    public static class Map extends Mapper<LongWritable, Text, LongWritable, IntWritable> {
 
         @Override
         public void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
@@ -82,73 +70,96 @@ public class CheapestHouses {
 
             if (tokens.length != VALID_TOKENS_LENGTH) return; // erreur de parsing Hadoop (typiquement, la description contient un \n)
 
-            int hostId = Integer.parseInt(tokens[HOST_ID_INDEX]);
-            String hostName = tokens[HOST_NAME_INDEX];
-            String roomType = tokens[ROOM_TYPE_INDEX];
-            long price = (long) Float.parseFloat(tokens[PRICE_INDEX]);
-            int minimumNights = Integer.parseInt(tokens[MINIMUM_NIGHT_INDEX]);
-            int nbReviews = Integer.parseInt(tokens[NB_REVIEWS_INDEX]);
+            try {
+                int offerId = Integer.parseInt(tokens[OFFER_ID_INDEX]);
 
-            context.write(new Text( hostId + ";" + hostName ), one);
+                long price = (long) Float.parseFloat(tokens[PRICE_INDEX]);
+
+                String roomType = tokens[ROOM_TYPE_INDEX];
+
+
+                if (roomType.equals("Entire home/apt")) {
+                    context.write(new LongWritable(price), new IntWritable( offerId ));
+                }
+            } catch (NumberFormatException e){
+                LOG.severe("Error parsing line " + key + " : " + value);
+                e.printStackTrace();
+            }
+
         }
     }
 
-    public static class Reduce extends Reducer<Text, IntWritable, Text, IntWritable> {
+    public static class Reduce extends Reducer<LongWritable, IntWritable, IntWritable, LongWritable> {
 
+
+	    TreeMap<Long, List<Integer>> cheapest = new TreeMap<>();
 
         @Override
-        public void reduce(Text key, Iterable<IntWritable> values, Context context)
+        public void reduce(LongWritable price, Iterable<IntWritable> values, Context context)
                 throws IOException, InterruptedException {
 
+            if (!cheapest.containsKey(price.get())){
+                cheapest.put(price.get(), new ArrayList<>());
+            }
+
+            for (IntWritable offerId : values){
+                if (cheapest.size() < TOP_LIMITER){
+                    cheapest.get(price.get()).add(offerId.get());
+                }
+            }
+        }
+
+        @Override
+        protected void cleanup(Context context) throws IOException, InterruptedException {
             int count = 0;
 
-            for (IntWritable value : values){
-                count ++;
-            }
-
-            context.write(key, new IntWritable(count));
-
-        }
-
-    }
-
-    public static class SortMap extends Mapper<LongWritable, Text, IntWritable, Text> {
-
-        @Override
-        public void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
-
-//            System.out.println("Mapmap : " + value);
-            String[] tokens = value.toString().split("\t");
-            String host= tokens[0];
-            int offers = Integer.parseInt(tokens[1]);
-
-            context.write(new IntWritable(offers), new Text(host));
-        }
-    }
-
-    public static class SortReduce extends Reducer<IntWritable, Text, Text, IntWritable> {
-
-
-        @Override
-        public void reduce(IntWritable key, Iterable<Text> values, Context context)
-                throws IOException, InterruptedException {
-
-            for (Text value : values){
-
-//                System.out.println("Reducing " + key + " ==> " + value);
-                context.write(value, key);
+            for ( Long price : cheapest.keySet() ){
+                for (int offerId : cheapest.get(price)) {
+                    if (count < TOP_LIMITER){
+                        count++;
+                        context.write(new IntWritable(offerId), new LongWritable(price));
+                    }else break;
+                }
             }
 
         }
 
     }
+
+//    public static class SortMap extends Mapper<LongWritable, Text, IntWritable, Text> {
+//
+//        @Override
+//        public void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
+//
+//            String[] tokens = value.toString().split("\t");
+//            String host= tokens[0];
+//            int offers = Integer.parseInt(tokens[1]);
+//
+//            context.write(new IntWritable(offers), new Text(host));
+//        }
+//    }
+//
+//    public static class SortReduce extends Reducer<IntWritable, Text, Text, IntWritable> {
+//
+//
+//        @Override
+//        public void reduce(IntWritable key, Iterable<Text> values, Context context)
+//                throws IOException, InterruptedException {
+//
+//            for (Text value : values){
+//                context.write(value, key);
+//            }
+//
+//        }
+//
+//    }
 
 	public static void main(String[] args) throws Exception {
 		Configuration conf = new Configuration();
 
 		Job job = new Job(conf, "CountOffers");
 
-		job.setOutputKeyClass(Text.class);
+		job.setOutputKeyClass(LongWritable.class);
 		job.setOutputValueClass(IntWritable.class);
 
 		job.setMapperClass(Map.class);
@@ -165,21 +176,21 @@ public class CheapestHouses {
 
 		//////////////////////////////////
 
-        Job sortJob = new Job(conf, "BestOffers");
-
-        sortJob.setOutputKeyClass(IntWritable.class);
-        sortJob.setOutputValueClass(Text.class);
-
-        sortJob.setSortComparatorClass(IntWritableInverseComparator.class);
-
-        sortJob.setMapperClass(SortMap.class);
-        sortJob.setReducerClass(SortReduce.class);
-
-        sortJob.setInputFormatClass(TextInputFormat.class);
-        sortJob.setOutputFormatClass(TextOutputFormat.class);
-
-        FileInputFormat.addInputPath(sortJob, outPath);
-        FileOutputFormat.setOutputPath(sortJob, new Path(OUTPUT_PATH + "-" + MethodHandles.lookup().lookupClass().getSimpleName() + Instant.now().getEpochSecond()));
-        sortJob.waitForCompletion(true);
+//        Job sortJob = new Job(conf, "BestOffers");
+//
+//        sortJob.setOutputKeyClass(IntWritable.class);
+//        sortJob.setOutputValueClass(Text.class);
+//
+//        sortJob.setSortComparatorClass(IntWritableInverseComparator.class);
+//
+//        sortJob.setMapperClass(SortMap.class);
+//        sortJob.setReducerClass(SortReduce.class);
+//
+//        sortJob.setInputFormatClass(TextInputFormat.class);
+//        sortJob.setOutputFormatClass(TextOutputFormat.class);
+//
+//        FileInputFormat.addInputPath(sortJob, outPath);
+//        FileOutputFormat.setOutputPath(sortJob, new Path(OUTPUT_PATH + "-" + MethodHandles.lookup().lookupClass().getSimpleName() + Instant.now().getEpochSecond()));
+//        sortJob.waitForCompletion(true);
 	}
 }

@@ -93,7 +93,6 @@ public class MostNbPassengers {
 		    for (Integer value : values){
 		        for (Integer key : passengersOccurences.get(value) ){
                     context.write(new IntWritable(key), new IntWritable(value));
-					System.out.println(key + " ==> " + value);
                 }
 
             }

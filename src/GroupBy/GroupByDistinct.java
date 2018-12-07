@@ -45,13 +45,11 @@ public class GroupByDistinct {
 
 		@Override
 		public void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
-//			System.out.println("Mapping :" + key + " ==> " + value);
 			String[] colonnes = value.toString().split(",");
 			String orderID = colonnes[1];
 			String productID = colonnes[13];
 			String quantitySalesStr = colonnes[18];
-			
-//			System.out.println(orderID + " > " + productID + " > " + quantitySalesStr);
+
 			int quantitySales = 0;
 			try {
 				quantitySales = Integer.parseInt(quantitySalesStr);

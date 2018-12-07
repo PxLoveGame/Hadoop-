@@ -1,6 +1,5 @@
 package airBNB;
 
-import Tri.IntWritableInverseComparator;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IntWritable;
@@ -21,22 +20,28 @@ import java.util.logging.FileHandler;
 import java.util.logging.Logger;
 import java.util.logging.SimpleFormatter;
 
-public class TopHosts {
+public class WordCount {
 	private static final String INPUT_PATH = "input-AirBNB/";
 	private static final String OUTPUT_PATH = "output/AirBNB-";
-	private static final Logger LOG = Logger.getLogger(TopHosts.class.getName());
+	private static final Logger LOG = Logger.getLogger(WordCount.class.getName());
 
-	private static final int OFFER_ID_INDEX = 0;
+    private static final int OFFER_ID_INDEX = 0;
+    private static final int DESCRIPTION_INDEX = 1;
 	private static final int HOST_ID_INDEX = 2;
 	private static final int HOST_NAME_INDEX = 3;
+    private static final int NEIGHBOURHOOD_INDEX = 5;
+    private static final int LAT_INDEX = 6;
+    private static final int LON_INDEX = 7;
 	private static final int ROOM_TYPE_INDEX = 8;
 	private static final int PRICE_INDEX = 9;
 	private static final int MINIMUM_NIGHT_INDEX = 10;
 	private static final int NB_REVIEWS_INDEX = 11;
 	private static final int VALID_TOKENS_LENGTH = 16;
-
-
 	private static final IntWritable one = new IntWritable(1);
+
+	private static int TOP_LIMITER = 10; // k
+
+
 
 
 	static {
@@ -66,14 +71,28 @@ public class TopHosts {
 
             if (tokens.length != VALID_TOKENS_LENGTH) return; // erreur de parsing Hadoop (typiquement, la description contient un \n)
 
-            int hostId = Integer.parseInt(tokens[HOST_ID_INDEX]);
-            String hostName = tokens[HOST_NAME_INDEX];
+            try {
 
-            context.write(new Text( hostId + ";" + hostName ), one);
+                String description = tokens[DESCRIPTION_INDEX].toLowerCase();
+                description = description.replaceAll("[^\\x00-\\x7F]", ""); // remove non ASCII
+                description = description.replaceAll("\\.|'|!|\\?|,|:|‘|;|\"|\\(|\\)|\\d*", ""); // ponctuation, chiffres etc.
+                String[] words = description.split("\\s+");
+                for (String w : words){
+                    if (w.length() > 0) {
+                        context.write( new Text(w), one );
+                    }
+                }
+
+
+            } catch (NumberFormatException e){
+                LOG.severe("Error parsing line " + key + " : " + value);
+                e.printStackTrace();
+            }
+
         }
     }
 
-    public static class Reduce extends Reducer<Text, IntWritable, Text, IntWritable> {
+    public static class Reduce extends Reducer<Text, IntWritable, Text, Text> {
 
 
         @Override
@@ -81,41 +100,32 @@ public class TopHosts {
                 throws IOException, InterruptedException {
 
             int count = 0;
-
             for (IntWritable ignored : values){
-                count ++;
+                count++;
             }
 
-            context.write(key, new IntWritable(count));
+            System.out.println("Reduce " + key + " ==> " + count);
 
-        }
-
-    }
-
-    public static class SortMap extends Mapper<LongWritable, Text, IntWritable, Text> {
-
-        @Override
-        public void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
-
-            String[] tokens = value.toString().split("\t");
-            String host= tokens[0];
-            int offers = Integer.parseInt(tokens[1]);
-
-            context.write(new IntWritable(offers), new Text(host));
-        }
-    }
-
-    public static class SortReduce extends Reducer<IntWritable, Text, Text, IntWritable> {
-
-
-        @Override
-        public void reduce(IntWritable key, Iterable<Text> values, Context context)
-                throws IOException, InterruptedException {
-
-            for (Text value : values){
-                context.write(value, key);
-            }
-
+//            String[] tokens;
+//            int count = 0;
+//            float lat, lon;
+//            float avgLat, avgLon;
+//            float sumLat = 0, sumLon = 0;
+//
+//            for (Text value : values){
+//                count++;
+//                tokens = value.toString().split(";");
+//                lat = Float.parseFloat(tokens[0]);
+//                lon = Float.parseFloat(tokens[1]);
+//
+//                sumLat += lat;
+//                sumLon += lon;
+//            }
+//
+//            avgLat = sumLat / count;
+//            avgLon = sumLon / count;
+//
+//            context.write(key, new Text( avgLat + "\t" + avgLon ));
         }
 
     }
@@ -140,23 +150,5 @@ public class TopHosts {
 
 		job.waitForCompletion(true);
 
-		//////////////////////////////////
-
-        Job sortJob = new Job(conf, "BestOffers");
-
-        sortJob.setOutputKeyClass(IntWritable.class);
-        sortJob.setOutputValueClass(Text.class);
-
-        sortJob.setSortComparatorClass(IntWritableInverseComparator.class);
-
-        sortJob.setMapperClass(SortMap.class);
-        sortJob.setReducerClass(SortReduce.class);
-
-        sortJob.setInputFormatClass(TextInputFormat.class);
-        sortJob.setOutputFormatClass(TextOutputFormat.class);
-
-        FileInputFormat.addInputPath(sortJob, outPath);
-        FileOutputFormat.setOutputPath(sortJob, new Path(OUTPUT_PATH + "-" + MethodHandles.lookup().lookupClass().getSimpleName() + Instant.now().getEpochSecond()));
-        sortJob.waitForCompletion(true);
 	}
 }

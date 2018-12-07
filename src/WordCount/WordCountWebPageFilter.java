@@ -49,7 +49,6 @@ public class WordCountWebPageFilter {
 
             for (String word : words) {
                 if (!word.equals("")) {
-                    System.out.println(word);
                     context.write(new Text(word), one);
                 }
             }
